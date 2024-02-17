@@ -77,7 +77,7 @@ const App: FC = () => {
 
   const { defaultDate } = useMemo(
     () => ({
-      defaultDate: new Date(2023, 17, 2),
+      defaultDate: new Date(),
     }),
     []
   )
