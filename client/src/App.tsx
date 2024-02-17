@@ -1,4 +1,4 @@
-import { FC, Fragment, useState, useMemo } from 'react'
+import { FC, Fragment, useState, useEffect, useMemo, useCallback } from 'react'
 import moment from "moment";
 import Button from 'react-bootstrap/Button';
 import Modal from 'react-bootstrap/Modal';
@@ -6,44 +6,94 @@ import Form from 'react-bootstrap/Form';
 import InputGroup from 'react-bootstrap/InputGroup';
 import { Calendar, Views, momentLocalizer, SlotInfo } from 'react-big-calendar'
 import './App.css';
-
 import "react-big-calendar/lib/css/react-big-calendar.css";
 
 moment.locale("fr-FR");
 const localizer = momentLocalizer(moment);
 
-const App: FC = () => {
-  const [events, setEvents] = useState([])
 
-  const [event, setEvent] = useState({
-    start: "",
-    end: "",
+interface Meeting {
+  id?: number;
+  topic: string;
+  start_time: Date;
+  duration: number;
+}
+
+interface Event {
+  title: string;
+  start: Date;
+  end: Date;
+}
+
+
+const meetingToEvent = (meeting: Meeting): Event => {
+  return {
+    start: new Date(meeting.start_time),
+    end: moment(new Date(meeting.start_time)).add(meeting.duration, "m").toDate(),
+    title: meeting.topic
+  }
+}
+
+const eventToMeeting = (event: Event): Meeting => {
+  return {
+    start_time: event.start,
+    topic: event.title,
+    duration: (event.end.getTime() - event.start.getTime()) / 1000 / 60
+  }
+}
+
+const App: FC = () => {
+  const [events, setEvents] = useState<Event[]>([])
+
+  // Fetch existing events
+  useEffect(() => {
+    const dataFetch = async () => {
+      const data = await (
+        await fetch("http://localhost:9000/api/zoom/meetings")
+      ).json();
+
+      setEvents(data.meetings.map(meetingToEvent));
+    };
+    dataFetch();
+  }, []);
+
+  const [appointment, setAppointment] = useState<Event>({
     title: "",
+    start: new Date(),
+    end: new Date() 
   })
 
   const [show, setShow] = useState(false);
   const handleClose = () => setShow(false);
   const handleShow = () => setShow(true);
-  
-  const handleSelect = (slotInfo: SlotInfo) => {
-    setEvent({
-      start: moment(slotInfo.start).format("YYYY-MM-DD HH-mm"),
-      end: moment(slotInfo.end).format("YYYY-MM-DD HH-mm"),
-      title: "",
-    })
+
+  const handleSelectSlot = (slotInfo: SlotInfo) => {
+    const start = slotInfo.start
+    const end = slotInfo.end
+    setAppointment({ "start": start, "end": end, "title": "New Event" })
     handleShow()
   }
-    
-  const { defaultDate, scrollToTime } = useMemo(
+
+
+  const { defaultDate } = useMemo(
     () => ({
-      defaultDate: new Date(2015, 3, 12),
-      scrollToTime: new Date(1970, 1, 1, 6),
+      defaultDate: new Date(2023, 17, 2),
     }),
     []
   )
-  
-  const handleValidate = () => {
-    console.log("Validated!");
+
+  const handleValidate = async () => {
+    setEvents([...events, appointment])
+    const response = await fetch("http://localhost:9000/api/zoom/meetings", { 
+      method: 'POST', 
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(eventToMeeting(appointment)) 
+    })
+    const json = await response.json();
+    if (!response.ok) {
+      throw new Error("Network response was not ok");
+    }
+    handleClose()
   }
 
 
@@ -55,8 +105,7 @@ const App: FC = () => {
           defaultDate={defaultDate}
           defaultView={Views.WEEK}
           events={events}
-          onSelectSlot={handleSelect}
-          scrollToTime={scrollToTime}
+          onSelectSlot={handleSelectSlot}
           selectable
         />
       </div>
@@ -66,23 +115,27 @@ const App: FC = () => {
           <Modal.Title>Book a Zoom meeting</Modal.Title>
         </Modal.Header>
         <Modal.Body>
-          <p>You are booking a meeting from {event.start} to {event.end}</p>
-          <InputGroup>
-        <InputGroup.Text>Title</InputGroup.Text>
-        <Form.Control as="textarea" aria-label="With textarea" />
-      </InputGroup>
+          <p>From {moment(appointment?.start).format("YYYY-MM-DD HH:mm")} </p>
+          <p>To {moment(appointment?.end).format("YYYY-MM-DD HH:mm")} </p>
+          <Form.Label htmlFor="topic">Objet</Form.Label>
+          <Form.Control
+            type="topic"
+            id="topic"
+            defaultValue={appointment.title}
+            onChange={(e) => appointment.title = e.target.value}
+          ></Form.Control>
         </Modal.Body>
         <Modal.Footer>
           <Button variant="secondary" onClick={handleClose}>
             Close
           </Button>
-          <Button variant="primary" onClick={handleClose}>
+          <Button variant="primary" onClick={handleValidate}>
             Save Changes
           </Button>
         </Modal.Footer>
       </Modal>
-      
-      </Fragment>
+
+    </Fragment>
   )
 }
 

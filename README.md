@@ -32,13 +32,21 @@ npm install
 npm start
 ```
 
-Get all meetings:
+Run with autoreload
+```shell
+npm run debug
+```
+
+
+### Testing the backend with curl
+
+* Get all meetings:
 ```shell
 curl -X GET http://localhost:30010/api/zoom/meetings
 ```
 
-Create a new meeting:
+* Create a new meeting:
 ```shell
 curl -X POST http://localhost:30010/api/zoom/meetings -d "{}"
 ```
-Yes, you can create a meeting with no data!
+Yes, you can create a meeting with no data!!!!

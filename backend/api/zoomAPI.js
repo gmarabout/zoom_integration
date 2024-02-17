@@ -16,7 +16,6 @@ const getAccessToken = async () => {
       },
     });
 
-    console.log("Received access token : ", resp.data.access_token)
     return resp.data.access_token;
   } catch (err) {
     // Handle Error Here
@@ -35,14 +34,7 @@ const listZoomMeetings = async () => {
       },
     });
     const meetings = resp.data.meetings;
-
-    const newArray = meetings.map((obj) =>
-      ["id", "topic"].reduce((newObj, key) => {
-        newObj[key] = obj[key];
-        return newObj;
-      }, {})
-    );
-    return newArray;
+    return meetings    
   } catch (err) {
     if (err.status == undefined) {
       console.log("Error : ", err);

@@ -7,7 +7,7 @@ const zoomRoutes = require("./routes/zoomRoutes")
 
 dotenv.config()
 
-const port = process.env.PORT || 30015;
+const port = 9000;
 
 app.use(cors())
 app.use(express.json());
