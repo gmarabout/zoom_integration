@@ -83,17 +83,17 @@ const App: FC = () => {
   )
 
   const handleValidate = async () => {
-    setEvents([...events, appointment])
+    handleClose()
     const response = await fetch("http://localhost:9000/api/zoom/meetings", { 
       method: 'POST', 
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(eventToMeeting(appointment)) 
     })
-    const json = await response.json();
-    if (!response.ok) {
+    if (response.ok) {
+      setEvents([...events, appointment])
+    } else {
       throw new Error("Network response was not ok");
     }
-    handleClose()
   }
 
 
